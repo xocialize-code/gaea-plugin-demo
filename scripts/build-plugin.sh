@@ -7,7 +7,6 @@
 # Environment:
 #   GAEA_SPEC_ROOT     checkout of xocialize/gaea, for tools/validate.py (default: ../gaea-mes-media-server)
 #   SIGN_IDENTITY      default "Developer ID Application: Dustin Nielson (CFZS6RXUCP)"
-#   TEAM_ID            default CFZS6RXUCP; the signature must satisfy a Developer ID requirement pinned to it
 #   SIGN_KEYCHAIN      a keychain to sign from (CI's temporary keychain); default: the search list
 #   GAEA_PLUGIN_KIT_PATH  build against a local GaeaPluginKit checkout
 #
@@ -26,7 +25,8 @@ PRODUCT=gaea-demo-worker
 NAME=${PLUGIN_BUNDLE_NAME:-demo}
 SPEC=${GAEA_SPEC_ROOT:-$ROOT/../gaea-mes-media-server}
 IDENTITY=${SIGN_IDENTITY:-"Developer ID Application: Dustin Nielson (CFZS6RXUCP)"}
-TEAM=${TEAM_ID:-CFZS6RXUCP}
+# The one team Gaea v1 trusts (G-22, AB-D-0184); not configurable.
+TEAM=CFZS6RXUCP
 DIST=$ROOT/dist
 REQUIREMENT="anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = \"$TEAM\""
 

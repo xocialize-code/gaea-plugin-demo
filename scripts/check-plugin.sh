@@ -17,7 +17,6 @@ ROOT=${0:A:h:h}
 cd $ROOT
 NAME=${PLUGIN_BUNDLE_NAME:-demo}
 SPEC=${GAEA_SPEC_ROOT:-$ROOT/../gaea-mes-media-server}
-TEAM=${TEAM_ID:-CFZS6RXUCP}
 B=$ROOT/dist/$NAME.gaeaplugin
 PARAMS=${CHECK_PARAMS:-'{"n":4096,"iterations":10,"holdBytes":1000000000}'}
 step() { print -P "%B==> $*%b" }
@@ -46,14 +45,14 @@ system_profiler SPDisplaysDataType 2>/dev/null | grep -q "Metal Support" || gpu=
 if [[ $gpu == no ]]; then
   [[ ${CHECK_GPU:-auto} == required ]] && { print -u2 "no Metal device, and CHECK_GPU=required"; exit 1 }
   step "no Metal device here: checking signature, launch and hello only (run scripts/check-plugin.sh on a Mac for the GPU half)"
-  $TOOLS/gaea-plugin-check $B --team $TEAM --no-run --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
+  $TOOLS/gaea-plugin-check $B --no-run --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
   python3 $SPEC/tools/validate.py --transcript $ROOT/dist/check-session.gpp
   step "check passed WITHOUT the GPU job"
   exit 0
 fi
 
 step "drive $NAME.gaeaplugin over GPP"
-$TOOLS/gaea-plugin-check $B --team $TEAM --params $PARAMS --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
+$TOOLS/gaea-plugin-check $B --params $PARAMS --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
 grep -q '"device":"Device(gpu, 0)"' $ROOT/dist/check.log || { print -u2 "the job did not run on the GPU"; exit 1 }
 
 step "validate the session (tools/validate.py --transcript)"

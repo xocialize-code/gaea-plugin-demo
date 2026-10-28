@@ -80,7 +80,7 @@ notes="$state
 - \`${ZIP:t}\` sha256 \`$sha\`
 - \`manifest.json\`: the bundle's sealed manifest (GPP v1)
 
-Checked before publishing: \`codesign --verify --strict --deep\`, the Developer ID requirement for team ${TEAM_ID:-CFZS6RXUCP}, and an MLX job on the GPU driven over GPP under \`Process.launchRequirement\` with every build folder hidden (\`scripts/check-plugin.sh\`)."
+Checked before publishing: \`codesign --verify --strict --deep\`, the Developer ID requirement for team CFZS6RXUCP (the only team Gaea v1 trusts), and an MLX job on the GPU driven over GPP under \`Process.launchRequirement\` with every build folder hidden (\`scripts/check-plugin.sh\`)."
 if gh release view $TAG >/dev/null 2>&1; then
   gh release upload $TAG $assets --clobber
   gh release edit $TAG --notes $notes ${pre:---prerelease=false}

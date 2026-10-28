@@ -54,7 +54,7 @@ builds against a local GaeaPluginKit checkout.
 `check-plugin.sh` proves, on the signed bundle:
 
 - the signature passes Gaea's own check: strict, nested code, against a Developer ID requirement pinned to team
-  CFZS6RXUCP;
+  CFZS6RXUCP, the only team Gaea v1 trusts (G-22). The template signs with that team and nothing overrides it;
 - the worker launches under `Process.launchRequirement` and its hello matches the manifest, digest included;
 - an MLX job runs on the GPU (`Device(gpu, 0)`) driven over GPP, and the session passes `validate.py --transcript`;
 - with `.build` hidden, the metallib comes from the bundle: the same worker outside its bundle fails with "Failed to
@@ -128,4 +128,5 @@ gh workflow run release -R xocialize/gaea-plugin-demo -f tag=v0.2.0
 
 ## Licence
 
-Apache-2.0.
+Apache-2.0 (G-21), like Gaea and GaeaPluginKit. The manifest's `license` is the plugin code's; each model keeps its
+own weight licence in `models[].package.license`.
