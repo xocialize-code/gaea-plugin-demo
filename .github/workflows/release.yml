@@ -29,10 +29,9 @@ jobs:
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_APP_PASSWORD: ${{ secrets.NOTARY_APP_PASSWORD }}
-          GAEA_REPOS_TOKEN: ${{ secrets.GAEA_REPOS_TOKEN }}
         run: |
           missing=()
-          for name in DEVELOPER_ID_P12_BASE64 DEVELOPER_ID_P12_PASSWORD NOTARY_APPLE_ID NOTARY_APP_PASSWORD GAEA_REPOS_TOKEN; do
+          for name in DEVELOPER_ID_P12_BASE64 DEVELOPER_ID_P12_PASSWORD NOTARY_APPLE_ID NOTARY_APP_PASSWORD; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
@@ -47,17 +46,11 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref }}
 
-      # GPP's schemas and tools/validate.py live in the private xocialize/gaea repo.
+      # GPP's schemas and tools/validate.py live in xocialize/gaea (public).
       - uses: actions/checkout@v4
         with:
           repository: xocialize/gaea
-          token: ${{ secrets.GAEA_REPOS_TOKEN }}
           path: gaea-spec
-
-      - name: Let SwiftPM fetch the private GaeaPluginKit
-        env:
-          TOKEN: ${{ secrets.GAEA_REPOS_TOKEN }}
-        run: git config --global url."https://x-access-token:${TOKEN}@github.com/xocialize/".insteadOf "https://github.com/xocialize/"
 
       - name: Select Xcode 26
         run: |
@@ -85,7 +78,7 @@ jobs:
           NOTARY_APPLE_ID: ${{ secrets.NOTARY_APPLE_ID }}
           NOTARY_APP_PASSWORD: ${{ secrets.NOTARY_APP_PASSWORD }}
         run: |
-          xcrun notarytool store-credentials gaea-notary \
+          xcrun notarytool store-credentials mlx-notary \
             --apple-id "$NOTARY_APPLE_ID" --team-id CFZS6RXUCP --password "$NOTARY_APP_PASSWORD" \
             --keychain "$KEYCHAIN"
 

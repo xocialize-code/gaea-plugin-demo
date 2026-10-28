@@ -7,7 +7,7 @@
 # Environment (beyond scripts/build-plugin.sh's):
 #   NOTARIZE        yes | no | auto (default). auto notarizes when the notary profile exists, and
 #                   otherwise publishes a pre-release marked "signed, not notarized".
-#   NOTARY_PROFILE  the notarytool keychain profile (default gaea-notary; see README "Notarization").
+#   NOTARY_PROFILE  the notarytool keychain profile (default mlx-notary, the fleet's; see README "Notarization").
 #   NOTARY_KEYCHAIN the keychain holding that profile (CI's temporary keychain); default: login.
 #   PUBLISH         yes (default) | no: build and notarize only.
 #   GH_TOKEN        for gh in CI.
@@ -16,7 +16,7 @@ ROOT=${0:A:h:h}
 cd $ROOT
 NAME=${PLUGIN_BUNDLE_NAME:-demo}
 NOTARIZE=${NOTARIZE:-auto}
-PROFILE=${NOTARY_PROFILE:-gaea-notary}
+PROFILE=${NOTARY_PROFILE:-mlx-notary}
 step() { print -P "%B==> $*%b" }
 
 $ROOT/scripts/build-plugin.sh

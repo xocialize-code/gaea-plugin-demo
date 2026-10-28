@@ -72,16 +72,17 @@ depth. It needs credentials only the account holder can create.
 
 1. Create an app-specific password for the Apple ID on team CFZS6RXUCP: account.apple.com → Sign-In and Security →
    App-Specific Passwords.
-2. Store it as the notary profile the scripts use (it prompts for the password):
+2. Store it as the notary profile the scripts use, `mlx-notary` (the fleet's shared profile, which DeckCraftNative's
+   release also uses; skip this step where it already exists). It prompts for the password:
 
    ```bash
-   xcrun notarytool store-credentials gaea-notary --apple-id <apple-id> --team-id CFZS6RXUCP
+   xcrun notarytool store-credentials mlx-notary --apple-id <apple-id> --team-id CFZS6RXUCP
    ```
 
 3. Check it:
 
    ```bash
-   xcrun notarytool history --keychain-profile gaea-notary
+   xcrun notarytool history --keychain-profile mlx-notary
    ```
 
 After that, `scripts/release.sh` notarizes on its own (`NOTARIZE=auto`) and replaces a pre-release's assets in place.
@@ -98,7 +99,6 @@ secrets on each plugin repo:
 | `DEVELOPER_ID_P12_PASSWORD` | the export password |
 | `NOTARY_APPLE_ID` | the Apple ID |
 | `NOTARY_APP_PASSWORD` | the app-specific password |
-| `GAEA_REPOS_TOKEN` | a fine-grained token with read-only Contents on xocialize/gaea and xocialize/gaea-plugin-kit (both private) |
 
 ```bash
 base64 -i developer-id.p12 | gh secret set DEVELOPER_ID_P12_BASE64 -R xocialize/gaea-plugin-demo
@@ -114,10 +114,6 @@ gh secret set NOTARY_APPLE_ID -R xocialize/gaea-plugin-demo
 
 ```bash
 gh secret set NOTARY_APP_PASSWORD -R xocialize/gaea-plugin-demo
-```
-
-```bash
-gh secret set GAEA_REPOS_TOKEN -R xocialize/gaea-plugin-demo
 ```
 
 Then delete `developer-id.p12`. To notarize a release that went out signed only:
