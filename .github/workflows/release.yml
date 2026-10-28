@@ -20,7 +20,6 @@ jobs:
     timeout-minutes: 60
     env:
       GAEA_SPEC_ROOT: ${{ github.workspace }}/gaea-spec
-      KEYCHAIN: ${{ runner.temp }}/gaea-signing.keychain-db
     steps:
       # Fail loudly, before anything is built, when a secret is missing: a release that skipped
       # notarization must never look green.
@@ -40,6 +39,9 @@ jobs:
             echo "::error::Missing secrets: ${missing[*]} (README.md, CI secrets)"
             exit 1
           fi
+
+      - name: Name the temporary keychain
+        run: echo "KEYCHAIN=$RUNNER_TEMP/gaea-signing.keychain-db" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v4
         with:
@@ -91,9 +93,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           NOTARIZE: "yes"
-          SIGN_KEYCHAIN: ${{ env.KEYCHAIN }}
-          NOTARY_KEYCHAIN: ${{ env.KEYCHAIN }}
-        run: scripts/release.sh
+        run: SIGN_KEYCHAIN="$KEYCHAIN" NOTARY_KEYCHAIN="$KEYCHAIN" scripts/release.sh
 
       - name: Keep the build's evidence
         if: always()
