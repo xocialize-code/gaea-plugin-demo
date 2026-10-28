@@ -21,7 +21,7 @@ struct Bundled: PackageConfiguration, BundledWeightSourcing {
 /// (Spikes/plugin-exec/README.md, check 5). Nothing stays resident between runs.
 let matmulManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize/gaea-plugin-demo", revision: "0.2.0", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize/gaea-plugin-demo", revision: "0.2.1", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 2_370_000_000)],
         requiredBackends: [.metalGPU]),
@@ -72,7 +72,7 @@ final class MatmulModel: PluginModel, @unchecked Sendable {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.2.0",
+    version: "0.2.1",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize/gaea-plugin-demo",
     title: "Gaea demo worker",
