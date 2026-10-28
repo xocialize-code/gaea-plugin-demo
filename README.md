@@ -1,7 +1,14 @@
 # gaea-plugin-demo
 
-The Gaea demo plugin, and the template every Gaea plugin starts from. It is a GPU matmul loop that proves the plugin
-path end to end: build, sign, verify, launch, run, cancel. It is built on
+The Gaea demo plugin, and the template every Gaea plugin starts from. It has two models:
+
+- `demo-matmul`, a GPU matmul loop behind a helper (`x-gaea.demo.matmul`), which proves the plugin path end to end:
+  build, sign, verify, launch, run, cancel;
+- `demo-gradient` (0.3.0), a GPU-computed two-colour gradient that answers MES `image.generate` with real PNGs. It
+  shows how an offer is declared (its `x-gaea.gradient_angle` option, limits, the `textToImage` surface its lane
+  backs), and gives a host an offer whose images it can check byte for byte. It needs Gaea 0.2.0 (`min_gaea`).
+
+It is built on
 [GaeaPluginKit](https://github.com/xocialize/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
 (xocialize/gaea, `spec/GPP-1.md`).
 
@@ -31,11 +38,12 @@ A release carries `demo-<version>.gaeaplugin.zip`, its `.sha256`, and `manifest.
 
 1. Copy this repo to `gaea-plugin-<family>` (G-11).
 2. In `main.swift`, change the identity (`id`, `version`, `repo`, `title`, `executable`).
-3. Replace `demo-matmul` with your models. An MLXEngine package is
+3. Replace `demo-matmul` and `demo-gradient` with your models. An MLXEngine package is
    `.engine(YourPackage.self, id:, title:, lanes:, operations:)`: one lane per configuration (usually per quant), and
    one `EngineOperation` per MES operation, mapping the job's params onto the canonical request. A model the engine has
    no capability for is `.custom(...)` with a `PluginModel`, as here.
-4. Declare `offers` (and `helpers`, `settings`, `storage`).
+4. Declare `offers` (and `helpers`, `settings`, `storage`). An offer's `x-` params become MES extensions, its outputs
+   are files under `output_dir`, and a text input such as `prompt` arrives as a `.txt` file (GPP-1 §3.3).
 5. Rename the product in `Package.swift` and `PRODUCT` in `scripts/build-plugin.sh`.
 
 ## Build and check locally
