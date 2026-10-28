@@ -43,10 +43,10 @@ notarized=no
 if [[ $NOTARIZE == yes ]]; then
   step "notarize ${ZIP:t}"
   xcrun notarytool submit $ZIP $notary --wait --output-format json | tee $DIST/notary.json
-  status=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' $DIST/notary.json)
+  notary_status=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("status",""))' $DIST/notary.json)
   id=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("id",""))' $DIST/notary.json)
   [[ -n $id ]] && xcrun notarytool log $id $notary $DIST/notary-log.json || true
-  [[ $status == Accepted ]] || { print -u2 "notarization: $status (see dist/notary-log.json)"; exit 1 }
+  [[ $notary_status == Accepted ]] || { print -u2 "notarization: $notary_status (see dist/notary-log.json)"; exit 1 }
 
   # A zip can't carry a ticket; the bundle inside can. stapler only takes some bundle types: where it
   # refuses, Gatekeeper fetches the ticket online instead.
