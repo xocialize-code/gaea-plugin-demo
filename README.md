@@ -9,8 +9,8 @@ The Gaea demo plugin, and the template every Gaea plugin starts from. It has two
   backs), and gives a host an offer whose images it can check byte for byte. It needs Gaea 0.2.0 (`min_gaea`).
 
 It is built on
-[GaeaPluginKit](https://github.com/xocialize/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
-(xocialize/gaea, `spec/GPP-1.md`).
+[GaeaPluginKit](https://github.com/xocialize-code/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
+(xocialize-code/gaea, `spec/GPP-1.md`).
 
 ## Layout
 
@@ -56,7 +56,7 @@ scripts/build-plugin.sh
 scripts/check-plugin.sh
 ```
 
-`GAEA_SPEC_ROOT` points at a checkout of xocialize/gaea (default `../gaea-mes-media-server`). `GAEA_PLUGIN_KIT_PATH`
+`GAEA_SPEC_ROOT` points at a checkout of xocialize-code/gaea (default `../gaea-mes-media-server`). `GAEA_PLUGIN_KIT_PATH`
 builds against a local GaeaPluginKit checkout.
 
 `check-plugin.sh` proves, on the signed bundle:
@@ -109,25 +109,25 @@ secrets on each plugin repo:
 | `NOTARY_APP_PASSWORD` | the app-specific password |
 
 ```bash
-base64 -i developer-id.p12 | gh secret set DEVELOPER_ID_P12_BASE64 -R xocialize/gaea-plugin-demo
+base64 -i developer-id.p12 | gh secret set DEVELOPER_ID_P12_BASE64 -R xocialize-code/gaea-plugin-demo
 ```
 
 ```bash
-gh secret set DEVELOPER_ID_P12_PASSWORD -R xocialize/gaea-plugin-demo
+gh secret set DEVELOPER_ID_P12_PASSWORD -R xocialize-code/gaea-plugin-demo
 ```
 
 ```bash
-gh secret set NOTARY_APPLE_ID -R xocialize/gaea-plugin-demo
+gh secret set NOTARY_APPLE_ID -R xocialize-code/gaea-plugin-demo
 ```
 
 ```bash
-gh secret set NOTARY_APP_PASSWORD -R xocialize/gaea-plugin-demo
+gh secret set NOTARY_APP_PASSWORD -R xocialize-code/gaea-plugin-demo
 ```
 
 Then delete `developer-id.p12`. To notarize a release that went out signed only:
 
 ```bash
-gh workflow run release -R xocialize/gaea-plugin-demo -f tag=v0.2.0
+gh workflow run release -R xocialize-code/gaea-plugin-demo -f tag=v0.2.0
 ```
 
 ## Licence

@@ -10,7 +10,7 @@ import UniformTypeIdentifiers
 // The Gaea demo plugin: a GPU matmul loop that proves the plugin path end to end (download, verify,
 // launch, run, cancel), and a GPU gradient that answers MES `image.generate` with real PNGs, so a
 // host can be checked with an offer that returns images (AB-T-0364). It started as the plugin-exec
-// spike's worker; the matmul helper is xocialize/gaea examples/v1/manifest/demo.json.
+// spike's worker; the matmul helper is xocialize-code/gaea examples/v1/manifest/demo.json.
 //
 // To make a plugin of your own from this template: change the identity below, replace
 // `demo-matmul` with your models (`.engine(YourPackage.self, …)` for an MLXEngine package), and
@@ -25,7 +25,7 @@ struct Bundled: PackageConfiguration, BundledWeightSourcing {
 /// (Spikes/plugin-exec/README.md, check 5). Nothing stays resident between runs.
 let matmulManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize/gaea-plugin-demo", revision: "0.3.0", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.0", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 2_370_000_000)],
         requiredBackends: [.metalGPU]),
@@ -77,7 +77,7 @@ final class MatmulModel: PluginModel, @unchecked Sendable {
 /// The gradient renders one size×size image at a time; the largest, 2048², peaks well under 0.2 GB.
 let gradientManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize/gaea-plugin-demo", revision: "0.3.0", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.0", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 200_000_000)],
         requiredBackends: [.metalGPU]),
@@ -174,7 +174,7 @@ let demo = GaeaPluginDefinition(
     version: "0.3.0",
     minGaea: "0.2.0",
     team: "CFZS6RXUCP",
-    repo: "https://github.com/xocialize/gaea-plugin-demo",
+    repo: "https://github.com/xocialize-code/gaea-plugin-demo",
     title: "Gaea demo worker",
     summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), and a GPU gradient for image.generate.",
     license: "Apache-2.0",
