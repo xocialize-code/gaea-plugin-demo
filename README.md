@@ -127,8 +127,19 @@ gh secret set NOTARY_APP_PASSWORD -R xocialize-code/gaea-plugin-demo
 Then delete `developer-id.p12`. To notarize a release that went out signed only:
 
 ```bash
-gh workflow run release -R xocialize-code/gaea-plugin-demo -f tag=v0.2.0
+gh workflow run release -R xocialize-code/gaea-plugin-demo -f tag=v0.2.0 -f publish=true
 ```
+
+Without `publish=true` a dispatched run builds, signs, checks and notarizes, then stops, and keeps the zip as the run's
+`dist` artifact. That's how to try a change to the build on a runner:
+
+```bash
+gh workflow run release -R xocialize-code/gaea-plugin-demo --ref <branch>
+```
+
+CI builds on Xcode 26, whose SwiftPM defaults to the native build system. That one skips mlx-swift's `.metal` kernels,
+so `build-plugin.sh` names Swift Build (`--build-system swiftbuild`), and the workflow installs the Metal toolchain
+it compiles them with (AB-T-0382).
 
 ## Licence
 

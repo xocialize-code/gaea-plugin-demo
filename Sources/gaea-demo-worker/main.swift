@@ -25,7 +25,7 @@ struct Bundled: PackageConfiguration, BundledWeightSourcing {
 /// (Spikes/plugin-exec/README.md, check 5). Nothing stays resident between runs.
 let matmulManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.0", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.1", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 2_370_000_000)],
         requiredBackends: [.metalGPU]),
@@ -77,7 +77,7 @@ final class MatmulModel: PluginModel, @unchecked Sendable {
 /// The gradient renders one size×size image at a time; the largest, 2048², peaks well under 0.2 GB.
 let gradientManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.0", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.1", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 200_000_000)],
         requiredBackends: [.metalGPU]),
@@ -171,7 +171,7 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.3.0",
+    version: "0.3.1",
     minGaea: "0.2.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
