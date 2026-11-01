@@ -1,5 +1,5 @@
 # Builds, signs, notarizes and publishes the plugin when a v<version> tag is pushed (or on demand for
-# an existing tag). The secrets it needs are listed in README.md, "CI secrets".
+# an existing tag). The secrets it needs: the plugin guide, https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize.
 name: release
 
 on:
@@ -39,7 +39,7 @@ jobs:
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
-            echo "::error::Missing secrets: ${missing[*]} (README.md, CI secrets)"
+            echo "::error::Missing secrets: ${missing[*]} (the plugin guide, https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize)"
             exit 1
           fi
 

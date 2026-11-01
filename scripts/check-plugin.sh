@@ -19,11 +19,13 @@ NAME=${PLUGIN_BUNDLE_NAME:-demo}
 SPEC=${GAEA_SPEC_ROOT:-$ROOT/../gaea-mes-media-server}
 B=$ROOT/dist/$NAME.gaeaplugin
 
-# ---- Your plugin's check: edit these three for your models (AUTHORING.md, "Check it") ----
-# The job gaea-plugin-check sends: its arguments after the bundle (`gaea-plugin-check --help` lists them). With none,
-# it runs the manifest's first helper or offer with `--params`.
+# ---- Your plugin's check: edit these three for your models (the plugin guide, "4. Build and check it") ----
+# The job gaea-plugin-check sends: its arguments after the bundle (the comment at the top of GaeaPluginKit's
+# Sources/gaea-plugin-check/main.swift lists them; x- options go in --model-params). With none, it runs the manifest's
+# first helper or offer.
 CHECK_ARGS=(--params '{"n":4096,"iterations":10,"holdBytes":1000000000}')
-# A pattern the check's output must contain to show the job did real work (empty: the job succeeding is enough).
+# Text the check's output must contain to show the job did real work: match something only the worker returns, such
+# as a value in its effective (empty: the job succeeding is enough).
 CHECK_EXPECT='"device":"Device(gpu, 0)"'
 # The control: one GPP `run` line sent to the bare worker outside its bundle, which must fail to load the metallib
 # (empty: no control). It must reach an MLX kernel; $cache is a scratch folder.

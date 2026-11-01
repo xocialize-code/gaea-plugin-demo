@@ -7,7 +7,7 @@
 # Environment (beyond scripts/build-plugin.sh's):
 #   NOTARIZE        yes | no | auto (default). auto notarizes when the notary profile exists, and
 #                   otherwise publishes a pre-release marked "signed, not notarized".
-#   NOTARY_PROFILE  the notarytool keychain profile (default mlx-notary, the fleet's; see README "Notarization").
+#   NOTARY_PROFILE  the notarytool keychain profile (default mlx-notary; the plugin guide, https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize).
 #   NOTARY_KEYCHAIN the keychain holding that profile (CI's temporary keychain); default: login.
 #   PUBLISH         yes (default) | no: build and notarize only.
 #   GH_TOKEN        for gh in CI.
@@ -35,7 +35,7 @@ $ROOT/scripts/check-plugin.sh
 notary=(--keychain-profile $PROFILE); [[ -n ${NOTARY_KEYCHAIN:-} ]] && notary+=(--keychain $NOTARY_KEYCHAIN)
 if [[ $NOTARIZE == auto ]]; then
   if xcrun notarytool history $notary >/dev/null 2>&1; then NOTARIZE=yes; else NOTARIZE=no
-    print "no notary profile \"$PROFILE\": publishing signed, not notarized (README, Notarization)"
+    print "no notary profile \"$PROFILE\": publishing signed, not notarized (https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize)"
   fi
 fi
 
@@ -75,12 +75,18 @@ else
   state="Signed with Developer ID (hardened runtime, secure timestamp). **Not notarized yet**: Gaea's own install path doesn't need it (it verifies the signature and launches with a launch requirement), but a zip side-loaded through a browser will be stopped by Gatekeeper."
   pre=(--prerelease)
 fi
+# What check-plugin.sh could check here: a runner without a GPU checks the launch and hello only.
+if ! grep -q " ran in " $DIST/check.log 2>/dev/null; then
+  checked="the worker launched under \`Process.launchRequirement\` with every build folder hidden and answering hello (this build machine has no GPU; the job itself is checked on the author's Mac)"
+else
+  checked="a job on the GPU driven over GPP under \`Process.launchRequirement\` with every build folder hidden"
+fi
 notes="$state
 
 - \`${ZIP:t}\` sha256 \`$sha\`
 - \`manifest.json\`: the bundle's sealed manifest (GPP v1)
 
-Checked before publishing: \`codesign --verify --strict --deep\`, the Developer ID requirement for team $(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["team"])' $DIST/manifest.json), the manifest's, and an MLX job on the GPU driven over GPP under \`Process.launchRequirement\` with every build folder hidden (\`scripts/check-plugin.sh\`)."
+Checked before publishing: \`codesign --verify --strict --deep\`, the Developer ID requirement for team $(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["team"])' $DIST/manifest.json), the manifest's, and $checked (\`scripts/check-plugin.sh\`)."
 if gh release view $TAG >/dev/null 2>&1; then
   gh release upload $TAG $assets --clobber
   gh release edit $TAG --notes $notes ${pre:---prerelease=false}

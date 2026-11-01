@@ -70,27 +70,30 @@ this repo, the demo plugin, which is also the template.
 - **A GitHub repo** for the plugin (public, or private: see section 7). Name it `gaea-plugin-<family>`, for example
   `gaea-plugin-sketch`. You also need the `gh` CLI, signed in.
 - **A checkout of [xocialize-code/gaea](https://github.com/xocialize-code/gaea)**, which holds the manifest schemas
-  and `tools/validate.py`. The build uses them. Clone it next to your repo as `gaea-mes-media-server`, or point
-  `GAEA_SPEC_ROOT` at it:
-
-  ```bash
-  git clone https://github.com/xocialize-code/gaea ../gaea-mes-media-server
-  ```
+  and `tools/validate.py`. The build uses them. Section 1 clones it beside your plugin's folder, where the scripts look
+  by default (`GAEA_SPEC_ROOT` points elsewhere).
 
 - **To run it, Gaea 0.13.0 or later.** That's the first version that holds a new team's release for the operator.
   Older versions refuse any team but Gaea's own.
 
 ## 1. Make your repo from the template
 
-1. Copy this repo's files into your new repo, without its history:
+1. In the folder where your plugin will live, clone the spec repo as `gaea-mes-media-server`, then copy the template
+   without its history:
+
+   ```bash
+   git clone https://github.com/xocialize-code/gaea gaea-mes-media-server
+   ```
 
    ```bash
    git clone --depth 1 https://github.com/xocialize-code/gaea-plugin-demo gaea-plugin-sketch
    ```
 
    ```bash
-   cd gaea-plugin-sketch && rm -rf .git && git init -b main
+   cd gaea-plugin-sketch && rm -rf .git AUTHORING.md && git init -b main
    ```
+
+   This guide stays online; your copy doesn't need it.
 
 2. **Rename the worker.** Its name is `gaea-<family>-worker`.
    - Move `Sources/gaea-demo-worker` to `Sources/gaea-sketch-worker`.
@@ -99,9 +102,22 @@ this repo, the demo plugin, which is also the template.
    the `NAME` default (`demo`) to your bundle's short name (`sketch`). In `build-plugin.sh`, set `PRODUCT` to the
    target's name.
 4. **Edit `main.swift`** (section 2). Replace the demo's two models with yours, or start by renaming one of them.
-5. **Rewrite `README.md`** for your plugin, and keep a link to this guide.
+5. **Rewrite `README.md`** for your plugin, and keep a link to this guide. Update the comment at the top of
+   `Package.swift` too.
 6. **Keep the licence, or replace it.** `LICENSE` is Apache-2.0. The manifest's `license` is your plugin code's.
    Each model declares its weights' licence separately.
+7. **Create the GitHub repo** and make it the remote. Push `main` now, before you ever push a tag: a tag pushed in
+   the same push that first brings the workflow to a new repo may not start a run (section 6).
+
+   ```bash
+   git add -A && git commit -m "Sketch from the Gaea plugin template"
+   ```
+
+   ```bash
+   gh repo create you/gaea-plugin-sketch --private --source . --remote origin --push
+   ```
+
+   Use `--public` for a public repo.
 
 `Package.swift` takes GaeaPluginKit `from: "0.10.0"`: 0.10.0 is the first kit that accepts a team other than Gaea's
 own. If your model is an MLX Swift package, add it as a dependency too. To work on the kit and your plugin together,
@@ -132,6 +148,12 @@ let plugin = GaeaPluginDefinition(
 
 await GaeaPluginMain.run(plugin)
 ```
+
+Names follow fixed patterns, which the validator enforces at build time:
+- **`id`** is lowercase reverse DNS, such as `com.example.gaea.sketch`.
+- **Model and lane ids** are lowercase.
+- **Your own options** are named `x-<vendor>.<name>`. `<vendor>` is lowercase letters and digits only, with no
+  hyphen, and `<name>` is lowercase letters, digits and `_`: `x-sketch.style`, not `x-my-sketch.style`.
 
 These fields have to agree with things outside the code:
 - **`team`** must be your certificate's team. The build signs with the identity of that team, and Gaea refuses a
@@ -169,6 +191,8 @@ final class SketchModel: PluginModel, @unchecked Sendable {
 ```
 
 How a job reaches `run`:
+- **Your `x-` options arrive in `job.param("x-sketch.style")`.** Clients send them under the request's `extensions`
+  (section 7), and the run carries them as `model_params`.
 - **Inputs arrive as files**, even text. An MES `prompt` is a UTF-8 `.txt` file (`job.input("prompt")`), an image is
   its file, and several values arrive as a list (GPP-1 §3.3).
 - **Outputs are files you write under `job.outputDir`.** Name them by the MES output (`images`, `audio`, `video`), or
@@ -178,29 +202,41 @@ How a job reaches `run`:
 - **A warning** tells the client you did something other than asked: `Warning(code: "size_snapped", message:,
   param: "size")`.
 - **A refusal** is a `GPPError`, for example `GPPError(.invalidRequest, "size is 64–2048 on each side.")`. The codes
-  are in GPP-1 §3.5: `invalid_request`, `unsupported_operation`, `unknown_model`, `out_of_memory`, `model_error` and
-  `cancelled`.
+  are in GPP-1 §3.5. The ones a model uses are `invalid_request`, `unsupported_operation`, `unknown_model`,
+  `out_of_memory`, `model_error`, `internal` (your own bug, such as a PNG that won't encode) and `cancelled`.
 - **A cancel** arrives as a `CancellationError` from `context.checkCancellation()`. Check at every step.
 - **Seeds:** if your model is random, seed it from `job.seed`, so the same request makes the same output.
 
 Each model also carries a `PackageManifest` (MLXToolKit): its weight licence, provenance, footprints (section 3), the
-backends it needs (`.metalGPU`), and its surfaces (`ToolDescriptor`s with a capability such as `.textToImage`). A
-`.custom` model with no surfaces can still be offered. The demo's `matmulManifest` and `gradientManifest` are complete
-examples.
+backends it needs (`.metalGPU`), and its surfaces. **A model you offer needs a surface whose capability backs the
+offer's operation.** For example, `image.generate` needs `ToolDescriptor(name:, capability: .textToImage, summary:)`,
+and the validator refuses the offer without it (GPP-1 §4.7: "no lane of '…' backs ['textToImage']"). Only a model
+that is just a helper can have `surfaces: []`, like the demo's matmul. The demo's `gradientManifest` is a complete
+example of an offered custom model.
 
 ### Offers
 
 An offer makes a model answer an MES operation. It's `PluginManifest.Offer`:
 - **`operation` and `profile`:** for example `image.generate` in the `image` profile. The MES profile defines the
   standard params (`size`, `count`, `seed`, `quality`).
-- **`model`:** the card clients see. It holds `id`, `title`, `license` (`spdx`, `commercial_use`, `terms_url`),
-  `memory_class`, `speed_class`, `quality_tiers` and `notes`. A licence that needs the operator's or users'
-  acceptance is declared here.
+- **`model`:** the card clients see. It holds:
+  - `id` and `title`;
+  - `license`, with `spdx`, `commercial_use` (`true`, `false` or `"unknown"`) and `terms_url`;
+  - `memory_class`: `small`, `medium`, `large` or `xlarge`;
+  - `speed_class`: `fast`, `standard` or `slow`;
+  - `quality_tiers`: a non-empty subset of `draft`, `standard` and `best`;
+  - `notes`.
+
+  A licence that needs the operator's or users' acceptance is declared here too.
 - **`params`:** a JSON Schema for your own options. Each key starts with `x-` (`x-sketch.style`), and clients see it
   as an MES extension. `x-mes-ui` gives the form widget, because plugins ship no UI code: Gaea renders forms from these
   descriptors.
 - **`limits`:** `maxPixels`, `minSide`, `maxSide` and `sizeMultiple` for images, and duration and frame limits for
-  audio and video. Gaea refuses a request outside them before your worker sees it.
+  audio and video. Gaea applies them before your worker sees the request:
+  - past `maxPixels` is refused with 422 `out_of_limits`;
+  - a size that isn't a multiple of `sizeMultiple` is snapped to one, and the client gets a `size_snapped` warning.
+
+  Your worker receives the snapped size.
 
 **Helpers** are operations for Gaea or tools, not for MES clients, such as the demo's `x-gaea.demo.matmul`. Plugins
 can also declare `settings` (operator settings, rendered as forms) and `storage` (a small key-value store Gaea keeps
@@ -210,12 +246,22 @@ The full manifest rules are GPP-1 §4.
 
 ## 3. Lanes, footprints and how Gaea learns peaks
 
-- **A lane is one way to load a model**, usually one quantization (`bf16`, `int8`, `int4`). Every model has exactly
-  one **default** lane:
+- **A lane is one way to load a model**, usually one quantization. Every model has exactly one **default** lane.
+  A lane that resolves a quant is named after it (`fp32`, `bf16`, `int8`, `int4`; GPP-1 §4.7):
 
   ```swift
-  lanes: [LaneDefinition(id: "int8", default: true, configuration: Int8Config()),
-          LaneDefinition(id: "bf16", default: false, configuration: BF16Config())]
+  lanes: [LaneDefinition(id: "int8", default: true, configuration: SketchInt8()),
+          LaneDefinition(id: "bf16", default: false, configuration: SketchBF16())]
+  ```
+
+  Each `configuration` is a `PackageConfiguration` you define, saying where the lane's weights come from. A model
+  with no weights to download, such as a procedural one, uses one lane with a configuration that bundles nothing,
+  like the demo's:
+
+  ```swift
+  struct Bundled: PackageConfiguration, BundledWeightSourcing {
+      var bundledWeightSources: [BundledWeightSource] { [] }
+  }
   ```
 
 - **Each lane declares what it holds**, in the model's `PackageManifest`:
@@ -239,8 +285,10 @@ The full manifest rules are GPP-1 §4.
   - the next admission charges the measured peak.
 
   An under-declared lane therefore gets admitted late, and squeezes other models until Gaea has learned its peak.
-  Declare honestly: measure your largest case with `gaea-plugin-check` (it prints the worker's phys_footprint and
-  peak), and round up.
+  Declare honestly. Measure your largest case with `gaea-plugin-check`: its `memory report` line prints the worker's
+  phys_footprint and lifetime peak, the same figure Gaea learns from. It's the whole process, including MLX's GPU
+  cache and the process's own baseline, so it varies a little from run to run. Take the largest of a few runs and
+  round up.
 
 ## 4. Build and check it
 
@@ -277,13 +325,26 @@ Edit the block at the top of `check-plugin.sh` for your models:
   (--operation image.generate --model sketch --text prompt="a lighthouse" --params '{"size":{"width":512,"height":512}}' --seed 7)
   ```
 
-  Other flags: `--lane <id>`, `--model-params '<json>'` for `x-` params, `--input <name>=<path>` for media, and
-  `--models-root <dir>` to use weights already on disk. The comment at the top of the kit's
-  `Sources/gaea-plugin-check/main.swift` lists them all.
-- **`CHECK_EXPECT`** is text the output must contain to show real work happened. Leave it empty if the job succeeding
-  is enough.
+  Other flags:
+  - `--lane <id>`;
+  - `--model-params '{"x-sketch.style":"ink"}'` for your `x-` options (not `--params`);
+  - `--input <name>=<path>` for media;
+  - `--models-root <dir>` to use weights already on disk.
+
+  The comment at the top of the kit's
+  [`Sources/gaea-plugin-check/main.swift`](https://github.com/xocialize-code/gaea-plugin-kit/blob/main/Sources/gaea-plugin-check/main.swift)
+  lists them all; the tool has no `--help`.
+- **`CHECK_EXPECT`** is text the output must contain to show real work happened. Match something only your worker
+  returns, such as a value in its `effective`: the check also prints the lines it sends, so text from your request
+  matches even if the worker did nothing. Leave it empty if the job succeeding is enough.
 - **`CONTROL_RUN`** is one GPP `run` line for a control: the worker, copied outside its bundle, must fail to load the
-  metallib. This proves the bundle carries its own. Leave it empty to skip the control.
+  metallib. This proves the bundle carries its own. For an image offer it looks like this:
+
+  ```
+  '{"type":"run","id":"h2","job":"job_control","operation":"image.generate","model":"sketch","lane":"fp32","inputs":{},"params":{"size":{"width":64,"height":64},"count":1},"output_dir":"$cache/out"}'
+  ```
+
+  Leave it empty to skip the control.
 
 **A golden check is worth having for a real model.** Add a second executable target, `<family>-inproc`, that calls the
 same model code in-process. Then compare its output byte for byte with what the signed bundle returns through
@@ -302,10 +363,11 @@ downloaded in a browser needs it, and the operator sees "Notarized: yes" when ap
 **On your Mac (once).** Store the notary credentials as a keychain profile:
 
 ```bash
-xcrun notarytool store-credentials mlx-notary --apple-id <your-apple-id> --team-id <TEAM> --password <app-specific-password>
+xcrun notarytool store-credentials mlx-notary --apple-id <your-apple-id> --team-id <TEAM>
 ```
 
-`scripts/release.sh` then notarizes on its own. With `NOTARY_PROFILE` you can use another profile name.
+It prompts for the app-specific password, which keeps it out of your shell history. `scripts/release.sh` then
+notarizes on its own. `mlx-notary` is the profile name the scripts look for; set `NOTARY_PROFILE` to use another.
 
 **In CI.** `.github/workflows/release.yml` builds, signs, checks, notarizes and publishes on a pushed `v*` tag. It
 needs four secrets, either on the repo or as organization secrets visible to it:
@@ -344,8 +406,8 @@ The workflow:
 - runs `scripts/release.sh`.
 
 It fails at once if a secret is missing, so a release that skipped notarization never looks green. Runners have no
-GPU, so CI checks the signature, the launch and the `hello`. Run `scripts/check-plugin.sh` on your Mac for the job
-itself.
+GPU, so CI checks the signature, the launch and the `hello`, and the release notes say the GPU job was run on the
+author's Mac. Run `scripts/check-plugin.sh` on your Mac before every tag.
 
 To try the whole pipeline without publishing anything, dispatch it on a branch:
 
@@ -358,11 +420,23 @@ Without `publish=true` it stops after notarizing, and keeps the zip as the run's
 ## 6. Release
 
 1. Set `version` in `main.swift`, and run `scripts/build-plugin.sh` and `scripts/check-plugin.sh` on your Mac.
-2. Commit and push, then tag `v<version>` and push the tag:
+2. Commit and push `main`, then tag `v<version>` and push the tag on its own:
 
    ```bash
-   git tag v0.1.0 && git push origin main v0.1.0
+   git push origin main
    ```
+
+   ```bash
+   git tag v0.1.0 && git push origin v0.1.0
+   ```
+
+   If no run starts within a minute, start one for the tag:
+
+   ```bash
+   gh workflow run release -R you/gaea-plugin-sketch -f tag=v0.1.0 -f publish=true
+   ```
+
+   This happens on a brand-new repo when the tag arrives in the same push as the workflow file.
 
 3. Watch the run:
 
@@ -375,7 +449,7 @@ A release carries three assets, which Gaea needs all of:
 - its `.sha256`;
 - `manifest.json`.
 
-The tag must match the manifest's version, or the run stops. A version with a suffix (`0.2.0-rc.1`) is a pre-release
+The tag must match the manifest's version, or the run stops. A run takes a few minutes. A version with a suffix (`0.2.0-rc.1`) is a pre-release
 on GitHub. Gaea installs and offers updates only from full releases, unless the operator names the version.
 
 ## 7. Run it in Gaea
@@ -429,13 +503,23 @@ Your models are now offered over MES. For example, an image job on a Gaea servin
 
 ```bash
 curl -s -H 'MES-Version: 0.1' -H 'Content-Type: application/json' -X POST http://127.0.0.1:17630/mes/v0/jobs \
-  -d '{"operation":"image.generate","model":"sketch","inputs":{"prompt":"a lighthouse at dusk"},"params":{"size":{"width":512,"height":512},"seed":7}}'
+  -d '{"operation":"image.generate","model":"sketch","inputs":{"prompt":"a lighthouse at dusk"},"params":{"size":{"width":512,"height":512},"seed":7},"extensions":{"x-sketch.style":"ink"}}'
 ```
+
+How the request is built:
+- **Standard MES params** (`size`, `count`, `seed`, `quality`) go in `params`.
+- **Your `x-` options go in a top-level `extensions` object.** In `params`, an option is refused with
+  `unsupported_parameter`. `GET /mes/v0/operations` lists each operation's models and its `extensions` with their
+  schemas, which is also how a client finds your options.
 
 Then:
 1. Poll `GET /mes/v0/jobs/<id>?wait=10` until its `state` is `holding`.
 2. Fetch each `result.outputs[].href`.
 3. Look at `result.effective.model_params["x-gaea.worker"]` for your plugin, version and lane.
+
+Gaea serves outputs in the client's requested format. An image may come back re-encoded (RGBA where your worker
+wrote RGB, say), so a byte-for-byte comparison belongs at the `gaea-plugin-check` level, not on what a client
+downloads.
 
 Other useful commands:
 - **`gaea models`** lists what's offered.
