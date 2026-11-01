@@ -83,6 +83,10 @@ jobs:
           security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
           rm "$RUNNER_TEMP/developer-id.p12"
           security find-identity -v -p codesigning "$KEYCHAIN"
+          # The certificate's team, for the notary credentials: Apple notarizes for the team that signed.
+          TEAM=$(security find-identity -v -p codesigning "$KEYCHAIN" | sed -n 's/.*"Developer ID Application: .* (\([A-Z0-9]\{10\}\))".*/\1/p' | head -1)
+          [ -n "$TEAM" ] || { echo "::error::no Developer ID Application identity in the p12"; exit 1; }
+          echo "TEAM=$TEAM" >> "$GITHUB_ENV"
 
       - name: Store the notary credentials in the same keychain
         env:
@@ -90,7 +94,7 @@ jobs:
           NOTARY_APP_PASSWORD: ${{ secrets.NOTARY_APP_PASSWORD }}
         run: |
           xcrun notarytool store-credentials mlx-notary \
-            --apple-id "$NOTARY_APPLE_ID" --team-id CFZS6RXUCP --password "$NOTARY_APP_PASSWORD" \
+            --apple-id "$NOTARY_APPLE_ID" --team-id "$TEAM" --password "$NOTARY_APP_PASSWORD" \
             --keychain "$KEYCHAIN"
 
       - name: Build, sign, check, notarize, release

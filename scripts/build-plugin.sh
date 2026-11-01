@@ -6,7 +6,8 @@
 #
 # Environment:
 #   GAEA_SPEC_ROOT     checkout of xocialize-code/gaea, for tools/validate.py (default: ../gaea-mes-media-server)
-#   SIGN_IDENTITY      default "Developer ID Application: Dustin Nielson (CFZS6RXUCP)"
+#   SIGN_IDENTITY      default: the "Developer ID Application" identity in the keychain whose team is the one the
+#                      plugin's code declares (`team:` in main.swift, the manifest's `team`)
 #   SIGN_KEYCHAIN      a keychain to sign from (CI's temporary keychain); default: the search list
 #   GAEA_PLUGIN_KIT_PATH  build against a local GaeaPluginKit checkout
 #
@@ -27,11 +28,7 @@ cd $ROOT
 PRODUCT=gaea-demo-worker
 NAME=${PLUGIN_BUNDLE_NAME:-demo}
 SPEC=${GAEA_SPEC_ROOT:-$ROOT/../gaea-mes-media-server}
-IDENTITY=${SIGN_IDENTITY:-"Developer ID Application: Dustin Nielson (CFZS6RXUCP)"}
-# The one team Gaea v1 trusts (G-22, AB-D-0184); not configurable.
-TEAM=CFZS6RXUCP
 DIST=$ROOT/dist
-REQUIREMENT="anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = \"$TEAM\""
 
 step() { print -P "%B==> $*%b" }
 
@@ -54,7 +51,17 @@ step "validate manifest.json (tools/validate.py --manifest)"
 python3 $SPEC/tools/validate.py --manifest $DIST/manifest.json
 
 field() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]])' $DIST/manifest.json $1 }
-ID=$(field id); VERSION=$(field version); EXE=$(field executable)
+ID=$(field id); VERSION=$(field version); EXE=$(field executable); TEAM=$(field team)
+
+# The bundle is signed by the team the manifest names: Gaea refuses a signature that doesn't match it.
+keychain=(); [[ -n ${SIGN_KEYCHAIN:-} ]] && keychain=($SIGN_KEYCHAIN)
+if [[ -z ${SIGN_IDENTITY:-} ]]; then
+  SIGN_IDENTITY=$(security find-identity -v -p codesigning $keychain | sed -n "s/.*\"\(Developer ID Application: .* ($TEAM)\)\"/\1/p" | head -1)
+  [[ -n $SIGN_IDENTITY ]] || { print -u2 "no \"Developer ID Application: … ($TEAM)\" identity in the keychain: the manifest's team is $TEAM (main.swift's team:)"; exit 1 }
+fi
+IDENTITY=$SIGN_IDENTITY
+[[ $IDENTITY == *"($TEAM)" ]] || { print -u2 "SIGN_IDENTITY \"$IDENTITY\" is not team $TEAM, the manifest's team"; exit 1 }
+REQUIREMENT="anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] exists and certificate leaf[field.1.2.840.113635.100.6.1.13] exists and certificate leaf[subject.OU] = \"$TEAM\""
 [[ $EXE == $PRODUCT ]] || { print -u2 "manifest executable $EXE is not the product $PRODUCT"; exit 1 }
 
 step "assemble $NAME.gaeaplugin ($ID $VERSION)"

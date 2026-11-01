@@ -36,15 +36,13 @@ A release carries `demo-<version>.gaeaplugin.zip`, its `.sha256`, and `manifest.
 
 ## Make a plugin from this template
 
-1. Copy this repo to `gaea-plugin-<family>` (G-11).
-2. In `main.swift`, change the identity (`id`, `version`, `repo`, `title`, `executable`).
-3. Replace `demo-matmul` and `demo-gradient` with your models. An MLXEngine package is
-   `.engine(YourPackage.self, id:, title:, lanes:, operations:)`: one lane per configuration (usually per quant), and
-   one `EngineOperation` per MES operation, mapping the job's params onto the canonical request. A model the engine has
-   no capability for is `.custom(...)` with a `PluginModel`, as here.
-4. Declare `offers` (and `helpers`, `settings`, `storage`). An offer's `x-` params become MES extensions, its outputs
-   are files under `output_dir`, and a text input such as `prompt` arrives as a `.txt` file (GPP-1 §3.3).
-5. Rename the product in `Package.swift` and `PRODUCT` in `scripts/build-plugin.sh`.
+**[AUTHORING.md](AUTHORING.md) is the guide for plugin authors.** It covers:
+- making a repo from this template;
+- declaring models, offers, lanes and footprints;
+- building and checking;
+- signing with your own Developer ID and notarizing in CI;
+- releasing;
+- what a Gaea operator sees when approving your team.
 
 ## Build and check locally
 
@@ -59,10 +57,11 @@ scripts/check-plugin.sh
 `GAEA_SPEC_ROOT` points at a checkout of xocialize-code/gaea (default `../gaea-mes-media-server`). `GAEA_PLUGIN_KIT_PATH`
 builds against a local GaeaPluginKit checkout.
 
-`check-plugin.sh` proves, on the signed bundle:
+`check-plugin.sh` proves, on the signed bundle (its job and control are set in the block at its top):
 
-- the signature passes Gaea's own check: strict, nested code, against a Developer ID requirement pinned to team
-  CFZS6RXUCP, the only team Gaea v1 trusts (G-22). The template signs with that team and nothing overrides it;
+- the signature passes Gaea's own check: strict, nested code, against a Developer ID requirement pinned to the
+  manifest's team. `build-plugin.sh` signs with the keychain's Developer ID identity for that team (`SIGN_IDENTITY`
+  overrides it);
 - the worker launches under `Process.launchRequirement` and its hello matches the manifest, digest included;
 - an MLX job runs on the GPU (`Device(gpu, 0)`) driven over GPP, and the session passes `validate.py --transcript`;
 - with `.build` hidden, the metallib comes from the bundle: the same worker outside its bundle fails with "Failed to
@@ -72,7 +71,8 @@ On a machine with no Metal device it checks only the signature, the launch and h
 
 ## Notarization
 
-Gaea's own installer doesn't need notarization. It downloads without quarantine, verifies the signature and launches
+This section is for this repo, signed by team CFZS6RXUCP. AUTHORING.md, "Sign and notarize", is the same for your own
+team. Gaea's own installer doesn't need notarization. It downloads without quarantine, verifies the signature and launches
 with a launch requirement. Notarization covers zips that people side-load through a browser, and it adds defence in
 depth. It needs credentials only the account holder can create.
 

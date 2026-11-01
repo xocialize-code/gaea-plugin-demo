@@ -18,7 +18,17 @@ cd $ROOT
 NAME=${PLUGIN_BUNDLE_NAME:-demo}
 SPEC=${GAEA_SPEC_ROOT:-$ROOT/../gaea-mes-media-server}
 B=$ROOT/dist/$NAME.gaeaplugin
-PARAMS=${CHECK_PARAMS:-'{"n":4096,"iterations":10,"holdBytes":1000000000}'}
+
+# ---- Your plugin's check: edit these three for your models (AUTHORING.md, "Check it") ----
+# The job gaea-plugin-check sends: its arguments after the bundle (`gaea-plugin-check --help` lists them). With none,
+# it runs the manifest's first helper or offer with `--params`.
+CHECK_ARGS=(--params '{"n":4096,"iterations":10,"holdBytes":1000000000}')
+# A pattern the check's output must contain to show the job did real work (empty: the job succeeding is enough).
+CHECK_EXPECT='"device":"Device(gpu, 0)"'
+# The control: one GPP `run` line sent to the bare worker outside its bundle, which must fail to load the metallib
+# (empty: no control). It must reach an MLX kernel; $cache is a scratch folder.
+CONTROL_RUN='{"type":"run","id":"h2","job":"job_control","operation":"x-gaea.demo.matmul","model":"demo-matmul","lane":"fp32","inputs":{},"params":{"n":256,"iterations":1},"output_dir":"$cache/out"}'
+# ----
 step() { print -P "%B==> $*%b" }
 
 step "build gaea-plugin-check"
@@ -52,16 +62,19 @@ if [[ $gpu == no ]]; then
 fi
 
 step "drive $NAME.gaeaplugin over GPP"
-$TOOLS/gaea-plugin-check $B --params $PARAMS --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
-grep -q '"device":"Device(gpu, 0)"' $ROOT/dist/check.log || { print -u2 "the job did not run on the GPU"; exit 1 }
+$TOOLS/gaea-plugin-check $B $CHECK_ARGS --session $ROOT/dist/check-session.gpp | tee $ROOT/dist/check.log
+if [[ -n $CHECK_EXPECT ]]; then
+  grep -qF -- $CHECK_EXPECT $ROOT/dist/check.log || { print -u2 "the check's output lacks $CHECK_EXPECT"; exit 1 }
+fi
 
 step "validate the session (tools/validate.py --transcript)"
 python3 $SPEC/tools/validate.py --transcript $ROOT/dist/check-session.gpp
 
+[[ -n $CONTROL_RUN ]] || { step "check passed (no control run set)"; exit 0 }
 step "control: the bare worker, outside its bundle, must not find a metallib"
 cache=$TOOLS/cache; mkdir -p $cache
 ( print '{"type":"configure","id":"h1","budget":{"ceilingBytes":8000000000,"wiresWeights":false},"models_root":"'$cache'","cache_root":"'$cache'","settings":{}}'
-  print '{"type":"run","id":"h2","job":"job_control","operation":"x-gaea.demo.matmul","model":"demo-matmul","lane":"fp32","inputs":{},"params":{"n":256,"iterations":1},"output_dir":"'$cache'/out"}'
+  print -r -- ${CONTROL_RUN//\$cache/$cache}
   sleep 5 ) | (cd $TOOLS/bare && ./$EXE > $TOOLS/control.out 2> $TOOLS/control.err) || true
 grep -q '"type":"hello"' $TOOLS/control.out || { print -u2 "control: the bare worker never started"; exit 1 }
 if grep -q '"type":"result"' $TOOLS/control.out; then
