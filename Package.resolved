@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/xocialize/mlx-engine-swift.git",
       "state" : {
-        "revision" : "0ca55ed74de95d3660b09e4aab747a2beeb9db28",
-        "version" : "0.72.0"
+        "revision" : "46041603fef7b6378e26753e326828ae71b79ddf",
+        "version" : "0.73.1"
       }
     },
     {
