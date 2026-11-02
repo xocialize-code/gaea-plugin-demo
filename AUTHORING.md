@@ -101,7 +101,8 @@ this repo, the demo plugin, which is also the template.
 3. **Name the bundle.** In each of `scripts/build-plugin.sh`, `scripts/check-plugin.sh` and `scripts/release.sh`, change
    the `NAME` default (`demo`) to your bundle's short name (`sketch`). In `build-plugin.sh`, set `PRODUCT` to the
    target's name.
-4. **Edit `main.swift`** (section 2). Replace the demo's two models with yours, or start by renaming one of them.
+4. **Edit `main.swift`** (section 2). Replace the demo's two models with yours, or start by renaming one of them. If
+   you keep `GradientModel`, delete its `GAEA_DEMO_TRAP_SEED` lines: they make Gaea's crash test trap on purpose.
 5. **Rewrite `README.md`** for your plugin, and keep a link to this guide. Update the comment at the top of
    `Package.swift` too.
 6. **Keep the licence, or replace it.** `LICENSE` is Apache-2.0. The manifest's `license` is your plugin code's.
@@ -536,6 +537,21 @@ Other useful commands:
 
 A release signed by another team (a new certificate from a different team, say) is held for approval again. A
 renewed certificate from the same team isn't.
+
+## When your worker crashes
+
+Gaea records every exit it didn't ask for as a crash, and tells the job's client:
+- **The job:** it's tried once more on a new worker. If that worker crashes too, the job fails with both crashes
+  named. A job whose outputs stream is never retried, because its client already has chunks.
+- **The record:** the operator's `gaea crashes` lists each one with your plugin's version, the model and lane, the
+  signal or exit code, and your stderr's last 40 lines. `gaea crashes show <id>` gives the full record.
+- **The crash report:** Gaea also keeps macOS's crash report (`.ips`) when there is one. There is one for a trap, a bad
+  access or an abort, but not for a SIGKILL.
+- **Quarantine:** three crashes within ten minutes switch your plugin off until the operator switches it on again.
+  Crashes while idle count too.
+
+So a precondition that fails costs the operator a job, and three cost them your plugin. Throw a `GPPError` for anything
+a request can cause: the job fails with your message, and your worker stays up.
 
 ## When something fails
 

@@ -25,7 +25,7 @@ struct Bundled: PackageConfiguration, BundledWeightSourcing {
 /// (Spikes/plugin-exec/README.md, check 5). Nothing stays resident between runs.
 let matmulManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.1", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.2", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 2_370_000_000)],
         requiredBackends: [.metalGPU]),
@@ -77,7 +77,7 @@ final class MatmulModel: PluginModel, @unchecked Sendable {
 /// The gradient renders one size×size image at a time; the largest, 2048², peaks well under 0.2 GB.
 let gradientManifest = PackageManifest(
     license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
-    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.1", tier: 1),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.3.2", tier: 1),
     requirements: RequirementsManifest(
         footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 200_000_000)],
         requiredBackends: [.metalGPU]),
@@ -110,6 +110,11 @@ final class GradientModel: PluginModel, @unchecked Sendable {
         let angle = job.param("x-gaea.gradient_angle")?.doubleValue ?? 45
         let prompt = try job.input("prompt").map { try String(contentsOf: $0, encoding: .utf8) } ?? ""
         let seed = Int(job.seed ?? 0)
+        // Gaea's crash path is tested with this (AB-T-0417): a server started with GAEA_DEMO_TRAP_SEED traps here on that
+        // seed, as a plugin that fails a precondition would. On any other server no request reaches it. Delete it in your plugin.
+        if let trap = ProcessInfo.processInfo.environment["GAEA_DEMO_TRAP_SEED"].flatMap(Int.init), trap == seed {
+            fatalError("demo-gradient: a trap on seed \(seed), asked for by GAEA_DEMO_TRAP_SEED")
+        }
 
         var outputs: [Output] = []
         for i in 0..<count {
@@ -171,7 +176,7 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.3.1",
+    version: "0.3.2",
     minGaea: "0.2.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
