@@ -137,9 +137,10 @@ Without `publish=true` a dispatched run builds, signs, checks and notarizes, the
 gh workflow run release -R xocialize-code/gaea-plugin-demo --ref <branch>
 ```
 
-CI builds on Xcode 26, whose SwiftPM defaults to the native build system. That one skips mlx-swift's `.metal` kernels,
-so `build-plugin.sh` names Swift Build (`--build-system swiftbuild`), and the workflow installs the Metal toolchain
-it compiles them with (AB-T-0382).
+CI builds on GitHub's `xcode-27` runner (Xcode 27, Swift 6.4). Swift 6.3.3 on the `macos-26` runner built workers
+that segfault on macOS 27 when a model package pushes a task-local value of its own (Gaea AB-T-0418). `build-plugin.sh`
+names Swift Build (`--build-system swiftbuild`), which compiles mlx-swift's `.metal` kernels where Xcode 26's native
+build system skipped them, and the workflow installs the Metal toolchain it compiles them with (AB-T-0382).
 
 ## Licence
 

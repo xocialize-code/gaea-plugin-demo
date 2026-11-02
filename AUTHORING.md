@@ -50,7 +50,8 @@ this repo, the demo plugin, which is also the template.
 
 ## What you need
 
-- **A Mac with Apple silicon**, on macOS 26 or later, with Xcode 26 or later.
+- **A Mac with Apple silicon**, on macOS 26 or later, with Xcode 27 or later. Xcode 26's Swift 6.3 built workers that
+  crash on macOS 27 when a model package pushes a task-local value of its own; the template's CI uses Xcode 27 too.
 - **Xcode's Metal toolchain**, which MLX compiles its kernels with:
 
   ```bash
