@@ -9,6 +9,7 @@
 #                   otherwise publishes a pre-release marked "signed, not notarized".
 #   NOTARY_PROFILE  the notarytool keychain profile (default mlx-notary; the plugin guide, https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize).
 #   NOTARY_KEYCHAIN the keychain holding that profile (CI's temporary keychain); default: login.
+#   NOTARY_TEAM     the team to notarize as, when the profile's Apple ID belongs to several (default: the profile's).
 #   PUBLISH         yes (default) | no: build and notarize only.
 #   GH_TOKEN        for gh in CI.
 set -euo pipefail
@@ -33,6 +34,7 @@ fi
 $ROOT/scripts/check-plugin.sh
 
 notary=(--keychain-profile $PROFILE); [[ -n ${NOTARY_KEYCHAIN:-} ]] && notary+=(--keychain $NOTARY_KEYCHAIN)
+[[ -n ${NOTARY_TEAM:-} ]] && notary+=(--team-id $NOTARY_TEAM)
 if [[ $NOTARIZE == auto ]]; then
   if xcrun notarytool history $notary >/dev/null 2>&1; then NOTARIZE=yes; else NOTARIZE=no
     print "no notary profile \"$PROFILE\": publishing signed, not notarized (https://github.com/xocialize-code/gaea-plugin-demo/blob/main/AUTHORING.md#5-sign-and-notarize)"

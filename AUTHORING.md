@@ -370,6 +370,7 @@ xcrun notarytool store-credentials mlx-notary --apple-id <your-apple-id> --team-
 
 It prompts for the app-specific password, which keeps it out of your shell history. `scripts/release.sh` then
 notarizes on its own. `mlx-notary` is the profile name the scripts look for; set `NOTARY_PROFILE` to use another.
+If your Apple ID belongs to more than one team, `NOTARY_TEAM=<TEAM>` notarizes as that team with the same profile.
 
 **In CI.** `.github/workflows/release.yml` builds, signs, checks, notarizes and publishes on a pushed `v*` tag. It
 needs four secrets, either on the repo or as organization secrets visible to it:
