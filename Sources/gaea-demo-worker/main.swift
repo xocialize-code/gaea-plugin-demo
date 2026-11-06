@@ -161,6 +161,52 @@ final class GradientModel: PluginModel, @unchecked Sendable {
     }
 }
 
+/// The separator reads and writes one WAV at a time; a ten-minute stereo mixture is well under 0.5 GB.
+let separatorManifest = PackageManifest(
+    license: LicenseDeclaration(weightLicense: .apache2, portCodeLicense: .apache2),
+    provenance: Provenance(sourceRepo: "xocialize-code/gaea-plugin-demo", revision: "0.4.0", tier: 1),
+    requirements: RequirementsManifest(
+        footprints: [QuantFootprint(quant: .fp32, residentBytes: 0, peakActivationBytes: 500_000_000)],
+        requiredBackends: [.metalGPU]),
+    surfaces: [ToolDescriptor(name: "demo_separator", capability: .audioSeparation,
+                              summary: "A masked split of a mixture in two halves: a smoke test for a host's separate path, not a separator.")])
+
+/// MES `audio.separate` (Audio §3.6), the smallest honest way: `vocals` is the mixture at half its level, and
+/// `instrumental` the mixture minus those vocals. Both are masked stems, sample-aligned with the mixture and of its
+/// length, so the two add back to the mixture exactly. Gaea sends the mixture as a canonical 16-bit WAV and names the
+/// stems the job makes (`stems`).
+final class SeparatorModel: PluginModel, @unchecked Sendable {
+    func prepare(lane: LaneDefinition, context: WorkerContext) async throws {}
+    func unload() async {}
+
+    func run(_ job: Job, context: RunContext) async throws -> RunResult {
+        guard job.operation == "audio.separate" else { throw GPPError(.unsupportedOperation, "demo-separator only separates.") }
+        guard let input = job.input("audio") else { throw GPPError(.invalidRequest, "audio.separate needs the mixture.", detail: ["param": "audio"]) }
+        let wav = try Data(contentsOf: input)
+        guard wav.count >= 44, wav[wav.startIndex + 36..<wav.startIndex + 40] == Data("data".utf8) else {
+            throw GPPError(.invalidRequest, "The mixture isn't a canonical 16-bit WAV.", detail: ["param": "audio"])
+        }
+        let header = wav.prefix(44)
+        let samples = wav.subdata(in: (wav.startIndex + 44)..<wav.endIndex).withUnsafeBytes { Array($0.bindMemory(to: Int16.self)) }
+        let vocals = samples.map { Int16(Int($0) / 2) }
+        let instrumental = zip(samples, vocals).map { Int16(Int($0) - Int($1)) }
+        let stems = job.param("stems")?.arrayValue?.compactMap(\.stringValue) ?? ["vocals", "instrumental"]
+        var outputs: [Output] = []
+        for stem in stems {
+            let pcm: [Int16]
+            switch stem {
+            case "vocals": pcm = vocals
+            case "instrumental": pcm = instrumental
+            default: throw GPPError(.invalidRequest, "demo-separator makes vocals and instrumental.", detail: ["param": "stems"])
+            }
+            let url = job.outputDir.appending(path: "\(stem).wav")
+            try (header + pcm.withUnsafeBufferPointer { Data(buffer: $0) }).write(to: url)
+            outputs.append(.file(stem, url, mediaType: "audio/wav"))
+        }
+        return RunResult(outputs: outputs, effective: ["stems": .array(stems.map { .string($0) })])
+    }
+}
+
 /// A small, seedable generator, so the gradient's colours don't depend on the platform's RNG.
 struct SplitMix64 {
     var state: UInt64
@@ -176,12 +222,12 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.3.3",
+    version: "0.4.0",
     minGaea: "0.2.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
     title: "Gaea demo worker",
-    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), and a GPU gradient for image.generate.",
+    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), a GPU gradient for image.generate, and a masked two-stem split for audio.separate.",
     license: "Apache-2.0",
     executable: "gaea-demo-worker",
     models: [
@@ -191,6 +237,9 @@ let demo = GaeaPluginDefinition(
         .custom(id: "demo-gradient", title: "Demo gradient (image.generate smoke test)", manifest: gradientManifest,
                 lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
                 make: { GradientModel() }),
+        .custom(id: "demo-separator", title: "Demo separator (audio.separate smoke test)", manifest: separatorManifest,
+                lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
+                make: { SeparatorModel() }),
     ],
     offers: [
         PluginManifest.Offer(
@@ -211,6 +260,16 @@ let demo = GaeaPluginDefinition(
                 "additionalProperties": false,
             ],
             limits: PluginManifest.Limits(maxPixels: 4_194_304, minSide: 8, maxSide: 2048, sizeMultiple: 8)),
+        PluginManifest.Offer(
+            operation: "audio.separate", profile: "audio",
+            model: [
+                "id": "demo-separator", "title": "Demo separator",
+                "license": ["spdx": "Apache-2.0", "commercial_use": true, "terms_url": "https://www.apache.org/licenses/LICENSE-2.0"],
+                "memory_class": "small", "speed_class": "fast", "quality_tiers": ["draft", "standard", "best"],
+                "notes": "Not a separator: vocals is the mixture at half level and instrumental the rest, so the two add back to the mixture. It checks a host's separate path.",
+                "supports": ["stems": ["vocals", "instrumental"], "stem_method": "masked", "seed": false],
+                "limits": ["max_duration_s": 600],
+            ]),
     ],
     helpers: [
         PluginManifest.Helper(
