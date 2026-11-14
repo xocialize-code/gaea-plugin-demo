@@ -133,33 +133,39 @@ struct DemoTuft {
         }
 
         var bin = Data(), views: [[String: Any]] = [], accessors: [[String: Any]] = []
-        func add<T>(_ values: [T], type: String, component: Int, target: Int?, extra: [String: Any] = [:]) -> Int {
+        func view(_ bytes: Data, target: Int?) -> Int {
             while bin.count % 4 != 0 { bin.append(0) }
-            let start = bin.count
-            values.withUnsafeBufferPointer { bin.append(Data(buffer: $0)) }
-            var view: [String: Any] = ["buffer": 0, "byteOffset": start, "byteLength": bin.count - start]
+            var view: [String: Any] = ["buffer": 0, "byteOffset": bin.count, "byteLength": bytes.count]
             if let target { view["target"] = target }
+            bin.append(bytes)
             views.append(view)
-            let per = ["SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16][type]!
-            let scalars = (bin.count - start) / (component == 5126 ? 4 : 2)
-            accessors.append(["bufferView": views.count - 1, "componentType": component, "count": scalars / per, "type": type]
-                .merging(extra) { $1 })
+            return views.count - 1
+        }
+        let widths = ["SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16]
+        func floats(_ values: [Float], type: String, target: Int? = 34962, extra: [String: Any] = [:]) -> Int {
+            let v = view(values.withUnsafeBufferPointer { Data(buffer: $0) }, target: target)
+            accessors.append(["bufferView": v, "componentType": 5126, "count": values.count / widths[type]!, "type": type].merging(extra) { $1 })
+            return accessors.count - 1
+        }
+        func shorts(_ values: [UInt16], type: String, target: Int) -> Int {
+            let v = view(values.withUnsafeBufferPointer { Data(buffer: $0) }, target: target)
+            accessors.append(["bufferView": v, "componentType": 5123, "count": values.count / widths[type]!, "type": type])
             return accessors.count - 1
         }
         func flat(_ v: [SIMD3<Float>]) -> [Float] { v.flatMap { [$0.x, $0.y, $0.z] } }
         let lo = positions.reduce(positions[0]) { simd_min($0, $1) }, hi = positions.reduce(positions[0]) { simd_max($0, $1) }
         var attributes: [String: Any] = [
-            "POSITION": add(flat(positions), type: "VEC3", component: 5126, target: 34962,
-                            extra: ["min": [lo.x, lo.y, lo.z], "max": [hi.x, hi.y, hi.z]]),
-            "NORMAL": add(flat(normals), type: "VEC3", component: 5126, target: 34962),
-            "JOINTS_0": add(joints.flatMap { [$0, 0, 0, 0] }, type: "VEC4", component: 5123, target: 34962),
-            "WEIGHTS_0": add(positions.flatMap { _ in [Float(1), 0, 0, 0] }, type: "VEC4", component: 5126, target: 34962),
+            "POSITION": floats(flat(positions), type: "VEC3",
+                               extra: ["min": [lo.x, lo.y, lo.z], "max": [hi.x, hi.y, hi.z]]),
+            "NORMAL": floats(flat(normals), type: "VEC3"),
+            "JOINTS_0": shorts(joints.flatMap { [$0, 0, 0, 0] as [UInt16] }, type: "VEC4", target: 34962),
+            "WEIGHTS_0": floats(positions.indices.flatMap { _ in [1, 0, 0, 0] as [Float] }, type: "VEC4"),
         ]
         var material: [String: Any] = ["name": "DemoTuft", "doubleSided": true,
                                        "pbrMetallicRoughness": ["baseColorFactor": [0.8, 0.8, 0.8, 1], "metallicFactor": 0, "roughnessFactor": 1]]
         var json: [String: Any] = ["asset": ["version": "2.0", "generator": "gaea-plugin-demo"], "scene": 0]
         if let color {
-            attributes["TEXCOORD_0"] = add(uvs.flatMap { [$0.x, $0.y] }, type: "VEC2", component: 5126, target: 34962)
+            attributes["TEXCOORD_0"] = floats(uvs.flatMap { [$0.x, $0.y] as [Float] }, type: "VEC2")
             let png = try Self.png(color)
             while bin.count % 4 != 0 { bin.append(0) }
             views.append(["buffer": 0, "byteOffset": bin.count, "byteLength": png.count])
@@ -169,7 +175,7 @@ struct DemoTuft {
             json["textures"] = [["source": 0, "sampler": 0]]
             material["pbrMetallicRoughness"] = ["baseColorTexture": ["index": 0], "metallicFactor": 0, "roughnessFactor": 1]
         }
-        let primitive: [String: Any] = ["attributes": attributes, "indices": add(indices, type: "SCALAR", component: 5123, target: 34963),
+        let primitive: [String: Any] = ["attributes": attributes, "indices": shorts(indices, type: "SCALAR", target: 34963),
                                         "material": 0, "mode": 4]
 
         // The skeleton: the head bone, named as the body's, at the body's head; the chain under it. No joint is turned,
@@ -184,7 +190,7 @@ struct DemoTuft {
         }
         let inverse = places.flatMap { p -> [Float] in [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -p.x, -p.y, -p.z, 1] }
         let skin: [String: Any] = ["name": "DemoTuft", "skeleton": 0, "joints": Array(0..<places.count),
-                                   "inverseBindMatrices": add(inverse, type: "MAT4", component: 5126, target: nil)]
+                                   "inverseBindMatrices": floats(inverse, type: "MAT4", target: nil)]
         nodes.append(["name": "DemoTuft", "mesh": 0, "skin": 0])
         json["nodes"] = nodes
         json["scenes"] = [["nodes": [0, nodes.count - 1]]]
