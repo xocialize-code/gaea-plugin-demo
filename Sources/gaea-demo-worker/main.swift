@@ -222,12 +222,14 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.4.0",
-    minGaea: "0.2.0",
+    version: "0.5.0",
+    // 0.5.0's part model declares the engine's characterPart capability (contract 1.63.0), which a Gaea before 1.7.0
+    // can't decode.
+    minGaea: "1.7.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
     title: "Gaea demo worker",
-    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), a GPU gradient for image.generate, and a masked two-stem split for audio.separate.",
+    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), a GPU gradient for image.generate, a masked two-stem split for audio.separate, and a tuft on a body's head for mesh.generate_part.",
     license: "Apache-2.0",
     executable: "gaea-demo-worker",
     models: [
@@ -240,6 +242,9 @@ let demo = GaeaPluginDefinition(
         .custom(id: "demo-separator", title: "Demo separator (audio.separate smoke test)", manifest: separatorManifest,
                 lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
                 make: { SeparatorModel() }),
+        .custom(id: "demo-part", title: "Demo part (mesh.generate_part smoke test)", manifest: partManifest,
+                lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
+                make: { PartModel() }),
     ],
     offers: [
         PluginManifest.Offer(
@@ -269,6 +274,16 @@ let demo = GaeaPluginDefinition(
                 "notes": "Not a separator: vocals is the mixture at half level and instrumental the rest, so the two add back to the mixture. It checks a host's separate path.",
                 "supports": ["stems": ["vocals", "instrumental"], "stem_method": "masked", "seed": false],
                 "limits": ["max_duration_s": 600],
+            ]),
+        PluginManifest.Offer(
+            operation: "mesh.generate_part", profile: "mesh",
+            model: [
+                "id": "demo-part", "title": "Demo part",
+                "license": ["spdx": "Apache-2.0", "commercial_use": true, "terms_url": "https://www.apache.org/licenses/LICENSE-2.0"],
+                "memory_class": "small", "speed_class": "fast", "quality_tiers": ["draft", "standard", "best"],
+                "notes": "Not a hair model: a small skinned tuft with one spring, put above the body's head bone and as wide as the box. It checks a host's part path.",
+                "supports": ["parts": ["hair"], "subject_box": "required", "physics": true, "textures": ["atlas", "none"],
+                             "background_removal": true, "seed": true],
             ]),
     ],
     helpers: [

@@ -1,12 +1,17 @@
 # gaea-plugin-demo
 
-The Gaea demo plugin, and the template every Gaea plugin starts from. It has two models:
+The Gaea demo plugin, and the template every Gaea plugin starts from. Its models:
 
 - `demo-matmul`, a GPU matmul loop behind a helper (`x-gaea.demo.matmul`), which proves the plugin path end to end:
   build, sign, verify, launch, run, cancel;
 - `demo-gradient` (0.3.0), a GPU-computed two-colour gradient that answers MES `image.generate` with real PNGs. It
   shows how an offer is declared (its `x-gaea.gradient_angle` option, limits, the `textToImage` surface its lane
-  backs), and gives a host an offer whose images it can check byte for byte. It needs Gaea 0.2.0 (`min_gaea`).
+  backs), and gives a host an offer whose images it can check byte for byte. It needs Gaea 0.2.0 (`min_gaea`);
+- `demo-separator` (0.4.0), a masked two-stem split that answers MES `audio.separate`;
+- `demo-part` (0.5.0), a stand-in for MES `mesh.generate_part` (a part made to fit a body, GPP-1 §3.3.4). It reads the
+  body's head bone and writes a small skinned tuft above it, as wide as the request's `subject_box`, with one
+  `VRMC_springBone` spring (`physics`) and a seeded colour (`texture`). It uses GaeaPluginKit's `CharacterParts` as a
+  real plugin does, and declares the engine's `characterPart` surface, so 0.5.0 needs Gaea 1.7.0.
 
 It is built on
 [GaeaPluginKit](https://github.com/xocialize-code/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
