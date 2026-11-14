@@ -11,6 +11,15 @@
       }
     },
     {
+      "identity" : "gaea-plugin-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/xocialize-code/gaea-plugin-kit.git",
+      "state" : {
+        "revision" : "ee04fa5a52c20dc727a65b1a8e74d3baa2df6b37",
+        "version" : "0.13.0"
+      }
+    },
+    {
       "identity" : "mlx-engine-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/xocialize/mlx-engine-swift.git",
