@@ -222,14 +222,14 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.5.0",
-    // 0.5.0's part model declares the engine's characterPart capability (contract 1.63.0), which a Gaea before 1.7.0
-    // can't decode.
-    minGaea: "1.7.0",
+    version: "0.6.0",
+    // 0.6.0 is on GaeaPluginKit 0.15.0 and mlx-engine-swift 0.80.0 (contract 1.65.0), which Gaea decodes from 1.9.0;
+    // its locate stand-in is served from 1.9.0 too, the first Gaea on media-engine-spec 0.15.0.
+    minGaea: "1.9.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
     title: "Gaea demo worker",
-    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), a GPU gradient for image.generate, a masked two-stem split for audio.separate, and a tuft on a body's head for mesh.generate_part.",
+    summary: "A GPU matmul loop that proves the plugin path end to end (download, verify, launch, run, cancel), a GPU gradient for image.generate, a masked two-stem split for audio.separate, boxes around shapes for image.locate, and a tuft on a body's head for mesh.generate_part.",
     license: "Apache-2.0",
     executable: "gaea-demo-worker",
     models: [
@@ -245,6 +245,9 @@ let demo = GaeaPluginDefinition(
         .custom(id: "demo-part", title: "Demo part (mesh.generate_part smoke test)", manifest: partManifest,
                 lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
                 make: { PartModel() }),
+        .custom(id: "demo-locate", title: "Demo locate (image.locate smoke test)", manifest: locateManifest,
+                lanes: [LaneDefinition(id: "fp32", default: true, configuration: Bundled())],
+                make: { LocateModel() }),
     ],
     offers: [
         PluginManifest.Offer(
@@ -284,6 +287,16 @@ let demo = GaeaPluginDefinition(
                 "notes": "Not a hair model: a small skinned tuft with one spring, put above the body's head bone and as wide as the box. It checks a host's part path.",
                 "supports": ["parts": ["hair"], "subject_box": "required", "physics": true, "textures": ["atlas", "none"],
                              "background_removal": true, "seed": true],
+            ]),
+        PluginManifest.Offer(
+            operation: "image.locate", profile: "image",
+            model: [
+                "id": "demo-locate", "title": "Demo locate",
+                "license": ["spdx": "Apache-2.0", "commercial_use": true, "terms_url": "https://www.apache.org/licenses/LICENSE-2.0"],
+                "memory_class": "small", "speed_class": "fast", "quality_tiers": ["draft", "standard", "best"],
+                "notes": "Not a model, and it doesn't read the prompt: it boxes each shape that stands out from the picture's border colour, the largest first. It checks a host's locate path.",
+                "supports": ["seed": false],
+                "limits": ["max_count": .int(Int64(locateMaxBoxes))],
             ]),
     ],
     helpers: [

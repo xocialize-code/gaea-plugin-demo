@@ -12,6 +12,10 @@ The Gaea demo plugin, and the template every Gaea plugin starts from. Its models
   body's head bone and writes a small skinned tuft above it, as wide as the request's `subject_box`, with one
   `VRMC_springBone` spring (`physics`) and a seeded colour (`texture`). It uses GaeaPluginKit's `CharacterParts` as a
   real plugin does, and declares the engine's `characterPart` surface, so 0.5.0 needs Gaea 1.7.0.
+- `demo-locate` (0.6.0), a stand-in for MES `image.locate` (a picture and a prompt in, boxes out, GPP-1 §3.3.5). It
+  isn't a model and doesn't read the prompt: it boxes each shape that stands out from the picture's border colour,
+  the largest first, so a host's locate path and MES's IMAGE-017 to 019 run without weights. 0.6.0 is on
+  GaeaPluginKit 0.15.0 and mlx-engine-swift 0.80.0, and needs Gaea 1.9.0.
 
 It is built on
 [GaeaPluginKit](https://github.com/xocialize-code/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
