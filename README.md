@@ -17,6 +17,9 @@ The Gaea demo plugin, and the template every Gaea plugin starts from. Its models
   the largest first, so a host's locate path and MES's IMAGE-017 to 019 run without weights. 0.6.0 is on
   GaeaPluginKit 0.15.0 and mlx-engine-swift 0.80.0, and needs Gaea 1.9.0.
 
+0.6.1 changes nothing a host sees: it moves to mlx-engine-swift 0.82.1 and the fleet's mlx-swift fork 0.33.1 (upstream
+0.33.0 with the M5 attention fix, Gaea AB-D-0264), off the retired 0.32.4 fork.
+
 It is built on
 [GaeaPluginKit](https://github.com/xocialize-code/gaea-plugin-kit) and speaks the Gaea Plugin Protocol v1
 (xocialize-code/gaea, `spec/GPP-1.md`).

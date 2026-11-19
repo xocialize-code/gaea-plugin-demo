@@ -222,9 +222,10 @@ struct SplitMix64 {
 
 let demo = GaeaPluginDefinition(
     id: "com.xocialize.gaea.demo",
-    version: "0.6.0",
+    version: "0.6.1",
     // 0.6.0 is on GaeaPluginKit 0.15.0 and mlx-engine-swift 0.80.0 (contract 1.65.0), which Gaea decodes from 1.9.0;
-    // its locate stand-in is served from 1.9.0 too, the first Gaea on media-engine-spec 0.15.0.
+    // its locate stand-in is served from 1.9.0 too, the first Gaea on media-engine-spec 0.15.0. 0.6.1 is on mlx-engine-swift
+    // 0.82.1 (contract 1.66.0, which adds only imageLocate, a capability no demo model declares).
     minGaea: "1.9.0",
     team: "CFZS6RXUCP",
     repo: "https://github.com/xocialize-code/gaea-plugin-demo",
